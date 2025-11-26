@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown</title>
+  <link href="css/markdown.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/github-dark.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/katex@0.13.0/dist/katex.min.css" crossorigin="anonymous" integrity="sha256-gPJfuwTULrEAAcI3X4bALVU/2qBU+QY/TpoD3GO+Exw=">
+</head>
+<body>
+<main id="main">
+</main>
+<script src="js/markdown-it.min.js"></script>
+<script src="js/markdown-it-toc.js"></script>
+<script src="js/katex.min.js"></script>
+<script src="js/asciimath.js"></script>
+<script>
+asciimath.env = 'markdown'
+</script>
+<script>
+// 外链在新标签页打开
+const outLink = (md) => {
+  md.renderer.rules.link_open = (tokens, idx) => {
+    const href = tokens[idx].attrs[0][1]
+    if (href.startsWith('http')) {
+      return `<a target="_blank" rel="noopener noreferrer" href="${href}">`
+    } else {
+      return `<a href="${href}">`
+    }
+  }
+}
+
+// 代码复制
+const copyable = (pre) => {
+  const button = document.createElement('button')
+  button.className = 'btn-copy'
+  button.innerText = '复制'
+  button.onclick = () => {
+    const text = pre.firstChild.innerText
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    button.innerText = '已复制'
+    setTimeout(() => button.innerText = '复制', 3000)
+  }
+  pre.appendChild(button)
+}
+
+const renderMath = (text) => {
+  const am = (text) => asciimath.am2tex(text)
+  const tex_inline = (text) => katex.renderToString('\\displaystyle ' + text, { throwOnError: false, displayMode: false })
+  const tex_display = (text) => katex.renderToString(text, { throwOnError: false, displayMode: true })
+  const config = [
+    {
+      match: /\$\$([^$]*)\$\$/g,
+      replace: [tex_display],
+    },
+    {
+      match: /\$([^$]*)\$/g,
+      replace: [tex_inline],
+    },
+    {
+      match: /```am\n([^`]*)```/g,
+      replace: [am, tex_display],
+    },
+    {
+      match: /``([^`]*)``/g,
+      replace: [am, tex_inline],
+    }
+  ]
+  config.forEach(({ match, replace }) => {
+    text = text.replace(match, ($0, $1) => {
+      replace.forEach(fn => $1 = fn($1))
+      return $1
+    })
+  })
+  return text
+}
+
+const main = async () => {
+  const src = window.location.href.split('#')[1]
+  const md = markdownit({
+    html: true, // enable html in markdown
+    linkify: true, // convert url to <a>
+  })
+  .use(markdownitToc)
+  .use(outLink)
+  const res = await fetch(src)
+  let text = (await res.text()).replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  if (res.ok) {
+    text = text.replace(/^(#.*\n)?/, ($0) => $0 + '@[toc](目录)\n')
+    text = renderMath(text)
+  }
+  document.querySelector('#main').innerHTML = md.render(text)
+  document.querySelectorAll('pre').forEach(pre => copyable(pre))
+}
+
+const renderPromise = main()
+
+async function onHljsLoad () {
+  await renderPromise
+  hljs.highlightAll()
+}
+</script>
+<script onload="onHljsLoad()" src="js/highlight.min.js"></script>
+</body>
+</html>

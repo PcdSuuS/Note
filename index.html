@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="keywords" content="{{关键字}}">
+<meta name="description" content="{{描述}}">
+<meta name="author" content="{{作者}}">
+<title>{{标题}}</title>
+<link id="favicon" rel="shortcut icon" href="img/pikachu.png"/>
+<link rel="prefetch" href="https://unpkg.com/katex@0.13.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="prefetch" href="https://unpkg.com/katex@0.13.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="stylesheet" href="css/ui.css" />
+<style>
+body {
+  overflow: hidden;
+  background-color: #1a1a1a;
+}
+/* 头部 */
+.note-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  height: 45px;
+  line-height: 45px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 500;
+  border-color: #000;
+  background-color: #444;
+  color: #fff;
+}
+.note-header a {
+  height: 45px;
+  width: 45px;
+  border: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  background: rgba(0,0,0,0);
+  cursor: pointer;
+  text-decoration: none;
+}
+.note-header a:focus {
+  border: none;
+}
+.note-header-left {
+  transition: transform .5s;
+}
+/* 左侧导航 */
+.note-nav {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 100vh;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  background: #fcfcfc;
+  border-right: 1px #444;
+  transition: width .5s;
+  z-index: 0;
+}
+/* 目录 */
+.note-toc {
+  height: 100%;
+  overflow: auto;
+  color: #259;
+  box-shadow: inset -14px 0px 5px -12px rgb(210,210,210);
+}
+.note-toc li {
+  text-indent: 1em;
+  line-height: 2em;
+  /* .g-ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.note-toc ul li {
+  padding-left: 1em;
+  color: #444;
+}
+.note-toc ul li:hover,
+.note-toc ul li.is-active {
+  background: linear-gradient(90deg, #eef 80%, transparent);
+  cursor: pointer;
+}
+.note-toc li.is-new::after {
+  content: '';
+  background: #d34;
+  border-radius: 50%;
+  display: inline-block;
+  height: 6px;
+  width: 6px;
+  position: relative;
+  top: -5px;
+  left: 3px;
+}
+.note-toc a {
+  text-decoration: none;
+  color: inherit;
+}
+/* 下拉选择 */
+.note-select {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  color: inherit;
+  background: transparent;
+  background-image: none;
+  height: 40px;
+  width: 100%;
+  font-size: inherit;
+  text-align: center;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+.note-select:focus {
+  outline: none;
+}
+.note-select option {
+  color: #333;
+}
+/* 主要内容 */
+.note-main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-left: 0;
+  width: 100%;
+  height: 100vh;
+  transition: margin-left .5s;
+  z-index: 1;
+}
+.note-mask {
+  display: none;
+}
+.note-article {
+  flex: auto;
+  width: 100%;
+}
+.note-iframe {
+  display: block;
+  border: none;
+}
+body .note-modal-body {
+  width: 300px;
+  height: 400px;
+}
+.note-about {
+  transition: .3s;
+  transform: rotateY(calc(var(--flag) * 180deg));
+  --flag: 0;
+}
+.note-about > div,
+.note-about-back > div {
+  width: max-content;
+  margin: auto;
+}
+.note-about-back {
+  display: none;
+  box-sizing: border-box;
+  width: 100%;
+  position: absolute;
+  background: #fff;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  transform: scaleX(-1);
+}
+.note-about.is-back > .note-about-back {
+  display: block;
+}
+.note-about > .note-about-img {
+  border-radius: 50%;
+  background: #eec;
+  margin: 10px auto 20px auto;
+  height: 80px;
+  width: 80px;
+}
+.note-about-links {
+  font-size: 0.9em;
+  color: #888;
+  text-align: center;
+}
+.note-about a {
+  font-size: 0.9em;
+  color: #259;
+  text-decoration: none;
+}
+.note-about hr {
+  border-color: #eee;
+  margin: 10px 0;
+}
+
+body.is-nav-open > .note-nav {
+  display: flex;
+  width: 256px;
+}
+body.is-nav-open > .note-main {
+  margin-left: 256px;
+}
+body.is-nav-open .note-mask {
+  display: block;
+}
+body.is-nav-open .note-header-left {
+  transform: rotate(540deg);
+}
+</style>
+</head>
+
+<body>
+<nav class="note-nav">
+  <header class="note-header">
+    <a note="note-nav-prev">&#x276e;</a>
+    <div class="note-select-wrapper g-flex-auto">
+      <select name="book" class="note-select" title="book">
+      </select>
+    </div>
+    <a class="note-nav-next">&#x276f;</a>
+  </header>
+  <ul class="note-toc">
+  </ul>
+</nav>
+
+<main class="note-main">
+  <header class="note-header">
+    <a class="note-header-left" title="目录">&#x262f;</a>
+    <span class="note-header-title g-ellipsis g-flex-auto"></span>
+    <a class="note-header-right" title="About" style="font-size:1.5em">&#x2767;</a>
+  </header>
+  <div class="note-mask g-absolute g-full"></div>
+  <article class="note-article">
+  </article>
+</main>
+
+<script type="module">
+import { div, Modal } from './js/ui.js'
+import { toc } from './js/toc.js'
+div.key = 'note'
+const $ = el => document.querySelector(el)
+let aboutModal
+
+const router = {
+  currentBook: undefined,
+  currentIframe: undefined,
+  init () {
+    this.initBooks()
+    window.onhashchange = (e) => {
+      this.go(decodeURI(location.hash.slice(1)).split('/'))
+    }
+    window.onhashchange()
+  },
+  initBooks () {
+    const select = $('.note-select')
+    div.append(select, toc.map(book => div({
+      tag: 'option',
+      attr: {
+        value: book.value,
+      },
+      children: book.label,
+    })))
+  },
+  toggleNav (show) {
+    const { classList } = document.body
+    if (show === true) {
+      classList.add('is-nav-open')
+    } else if (show === false) {
+      classList.remove('is-nav-open')
+    } else {
+      classList.toggle('is-nav-open')
+    }
+  },
+  async go (route) {
+    if (!route[0]) route[0] = toc[0].value
+    this.currentBook = toc.find(v => v.value === route[0])
+    const select = $('.note-select')
+    select.value = this.currentBook.value
+    if (!route[1]) route[1] = this.currentBook.children[0].value
+    this.currentGroup = this.currentBook.children.find(v => v.value === route[1])
+    if (!route[2]) route[2] = this.currentGroup.children[0].value
+    this.currentArticle = this.currentGroup.children.find(v => v.value === route[2])
+
+    const url = route.join('/')
+    window.history.pushState(null, null, '#' + url)
+    this.iframe('markdown.html#' + url + '.md#' + (route[3] || '')) 
+    this.render()
+  },
+  iframe (src) {
+    const container = $('.note-article')
+    if (this.currentIframe) container.removeChild(this.currentIframe)
+    this.currentIframe = div({
+      container,
+      className: 'note-iframe g-full',
+      tag: 'iframe',
+      attr: {
+        title: '',
+        src,
+      },
+      onload: () => {
+        this.currentIframe.focus()
+        this.toggleNav(false)
+      },
+    })
+  },
+  render () {
+    const { currentBook } = this
+    const day = 86400 * 1000
+    const isRecent = (dateStr) => !!dateStr && (new Date() - new Date(dateStr) < 30 * day)
+    const preventDefault = e => e.preventDefault()
+    const latest = []
+    const groups = currentBook.children.map(group => div({
+      tag: 'li',
+      children: [
+        group.label,
+        div({
+          tag: 'ul',
+          children: group.children.map(article => {
+            const isNew = isRecent(article.date)
+            const getNode = () => div({
+              tag: 'li',
+              className: div.clsx({
+                'is-new': isNew,
+                'is-active': this.currentGroup.value === group.value && this.currentArticle.value === article.value,
+              }),
+              onclick: () => {
+                this.go([currentBook.value, group.value, article.value])
+              },
+              children: div({
+                tag: 'a',
+                attr: {
+                  href: `#${currentBook.value}/${group.value}/${article.value}`,
+                  title: article.label,
+                  onclick: preventDefault,
+                },
+                children: article.label,
+              })
+            })
+            if (isNew) latest.push(getNode())
+            return getNode()
+          })
+        })
+      ]
+    }))
+    const container = $('.note-toc')
+    container.innerHTML = ''
+    div.append(container, [
+      div({
+        tag: 'li',
+        children: [
+          '最近',
+          div({
+            tag: 'ul',
+            children: latest
+          })
+        ],
+      }),
+      ...groups,
+    ])
+  }
+}
+
+
+$('.note-header-left').onclick = () => router.toggleNav()
+$('.note-mask').onclick = () => router.toggleNav(false)
+$('.note-header-right').onclick = () => {
+  aboutModal = Modal({
+    innerHTML: `
+    <div class="note-about">
+      <div class="note-about-img g-flex-center">
+        <img src="img/pikachu.png" alt="头像">
+      </div>
+      <div>{{作者}}</div>
+      <div class="note-about-links">
+        <a href="{{mailto:author@example.com}}" target="_blank">邮箱</a>・<a href="{{https://github.com}}" target="_blank">github</a>
+      </div>
+      <hr>
+      <div class="note-about-links">
+        友情链接:
+        <ul>
+          <li>{{朋友}} <a href="{{https://github.com}}" target="_blank">github</a>・<a href="{{https://bilibili.com}}" target="_blank">bilibili</a></li>
+        </ul>
+      </div>
+      <div class="note-about-back"></div>
+    </div>
+    `
+  })
+}
+$('.note-select').onchange = e => {
+  router.go(e.target.value.split('/'))
+}
+
+router.init()
+</script>
+</body>
+</html>
